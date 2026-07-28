@@ -1,31 +1,80 @@
-# Favicon Steganography - 图片隐写术工具
+# 🔐 隐写加密通讯工具
 
-在 PNG 图片中隐藏和提取文本数据。
+将文本数据隐藏到图片像素中的 Web 工具，通过密钥签名体系实现私密通讯。
 
-## 功能
+## 功能特性
 
-- **编码**：将任意文本嵌入到图片或创建新的微小 PNG 图标
-- **解码**：从任何包含隐写数据的图片中提取隐藏的文本
-- **魔数验证**：使用 `0xFA 0xCE` 标记，防止误读普通图片
+- **文本 → 图片（编码）**：将任意文本写入 PNG 像素，可选择上传载体图
+- **图片 → 文本（解码）**：从隐写图片中提取并解密文本
+- **双密钥模式**：
+  - 默认密钥 `WelcomeToUse888!`（公开，不加密，向后兼容）
+  - 随机密钥（16 字节，AES-256-GCM 加密）
+- **载体图支持**：上传任意格式图片作为载体，数据藏入像素，输出原格式
+- **一键复制密钥**：随机密钥生成后可一键复制到剪贴板
+- **移动端适配**：手机浏览器打开即可使用
 
-## 原理
-
-每个像素有 R、G、B 三个通道（各 0-255）。文本转为 UTF-8 字节后，依次写入像素的 RGB 通道。数据前加 4 字节长度头和 2 字节魔数标记，确保解码准确性。
-
-## 用法
+## 快速启动
 
 ```bash
-python3 favicon_steganography.py          # 运行演示
-python3 favicon_steganography.py encode "你的文本" output.png    # 编码
-python3 favicon_steganography.py decode input.png               # 解码
+# 1. 安装依赖
+pip install -r requirements.txt
+
+# 2. 启动服务
+python app.py
+
+# 3. 浏览器打开
+# http://localhost:5000
 ```
 
-## 限制
+## 技术架构
 
-- 仅支持 PNG 无损格式
-- 容量 = 宽 × 高 × 3 字节，需容纳 7 字节头部 + 数据 + 填充
-- 16x16 可存约 761 字节
+| 层 | 技术 |
+|----|------|
+| 后端 | Flask 3.0 |
+| 前端 | 原生 HTML/CSS/JS |
+| 图片处理 | Pillow |
+| 加密 | PyCryptodome — AES-256-GCM |
+| 密钥派生 | PBKDF2-HMAC-SHA256 (100,000 迭代) |
 
-## License
+## 数据格式
 
-MIT
+```
+FA CE + 密钥标识(1B) + 数据长度(4B大端) + 数据(NB) + 随机填充
+```
+
+- `FA CE`：魔数标记
+- 密钥标识：`0x00` = 默认密钥，`0x01` = 随机密钥
+- 数据：明文（默认密钥）或 AES-GCM 密文（随机密钥）
+
+## API 接口
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/` | GET | 主页 |
+| `/api/generate-key` | GET | 生成随机密钥 |
+| `/api/encode` | POST | 编码：文本 → 图片 |
+| `/api/decode` | POST | 解码：图片 → 文本 |
+
+## 安全说明
+
+- 默认密钥模式 **不加密**，任何人都能解码，仅用于测试
+- 随机密钥使用 AES-256-GCM 认证加密，篡改会被检测
+- 密钥通过 PBKDF2 派生，迭代 100,000 次
+- 所有解码输出视为不可信数据
+
+## 项目结构
+
+```
+stego-tool/
+├── app.py              # Flask 主程序
+├── stego.py            # 核心隐写逻辑
+├── crypto_utils.py     # AES-GCM 加密/解密
+├── key_manager.py      # 密钥管理
+├── templates/
+│   └── index.html      # 前端页面
+├── static/
+│   ├── style.css       # 样式
+│   └── app.js          # 交互逻辑
+├── requirements.txt    # 依赖
+└── README.md
+```
