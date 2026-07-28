@@ -16,7 +16,7 @@ from key_manager import (
     DEFAULT_KEY, generate_random_key, is_default_key,
 )
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='../templates', static_folder='../static')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 最大上传 16MB
 
 # === 路由 ===
