@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+
+    <!-- ===== 核心 Viewport（兼容 iOS + Android） ===== -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0, user-scalable=yes">
+
+    <!-- ===== iOS Safari ===== -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="隐写工具">
+    <meta name="format-detection" content="telephone=no, email=no, address=no">
+
+    <!-- ===== Android Chrome ===== -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#007AFF" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+    <meta name="color-scheme" content="light dark">
+    <meta name="application-name" content="隐写加密通讯">
+    <meta name="msapplication-TileColor" content="#007AFF">
+
+    <!-- ===== 描述 ===== -->
+    <meta name="description" content="将文本数据隐藏到图片像素中的 Web 工具，通过密钥签名体系实现私密通讯">
+    <meta name="keywords" content="隐写术,steganography,图片隐写,加密通讯,LSB,AES加密">
+
+    <!-- ===== Open Graph ===== -->
+    <meta property="og:title" content="🔐 隐写加密通讯工具">
+    <meta property="og:description" content="将秘密藏在像素之间 · 只有密钥持有者才能读取">
+    <meta property="og:type" content="website">
+
+    <title>🔐 隐写加密通讯工具</title>
+
+    <!-- ===== PWA 图标 ===== -->
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/icon-192.png">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="alternate icon" type="image/x-icon" href="assets/favicon.ico">
+    <link rel="manifest" href="manifest.json">
+    <link rel="mask-icon" href="assets/favicon.svg" color="#007AFF">
+
+    <!-- ===== 预加载关键资源 ===== -->
+    <link rel="preload" href="css/style.css" as="style">
+    <link rel="preload" href="js/crypto.js" as="script">
+    <link rel="preload" href="js/stego.js" as="script">
+    <link rel="preload" href="js/app.js" as="script">
+
+    <!-- ===== 样式 ===== -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- ===== 无脚本降级 ===== -->
+    <noscript>
+        <style>
+            .container::before {
+                content: "⚠️ 本工具需要 JavaScript 才能运行，请启用 JavaScript 后刷新页面。";
+                display: block;
+                padding: 20px;
+                background: rgba(255,59,48,0.1);
+                border: 2px solid rgba(255,59,48,0.3);
+                border-radius: 16px;
+                color: #FF3B30;
+                font-weight: 600;
+                text-align: center;
+                margin-bottom: 20px;
+            }
+            .tabs, .panel { display: none !important; }
+        </style>
+    </noscript>
+</head>
+<body>
+    <!-- 动态背景光晕 -->
+    <div class="ambient-bg" aria-hidden="true">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <main class="container safe-area-top safe-area-bottom">
+        <!-- 头部 -->
+        <header class="hero">
+            <div class="app-icon" aria-hidden="true">
+                <svg viewBox="0 0 64 64" width="56" height="56" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#007AFF"/>
+                            <stop offset="100%" style="stop-color:#5856D6"/>
+                        </linearGradient>
+                    </defs>
+                    <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#iconGrad)"/>
+                    <path d="M32 16L44 24V40L32 48L20 40V24L32 16Z" fill="rgba(255,255,255,0.9)"/>
+                    <circle cx="32" cy="32" r="6" fill="url(#iconGrad)"/>
+                    <path d="M32 28V36M28 32H36" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <h1>隐写加密通讯</h1>
+            <p class="subtitle">将秘密藏在像素之间 · 只有密钥持有者才能读取</p>
+        </header>
+
+        <!-- Tab 切换 -->
+        <nav class="tabs glass-card" role="tablist" aria-label="功能切换">
+            <button class="tab-btn active" data-tab="encode" role="tab" aria-selected="true" aria-controls="panel-encode">
+                <span class="tab-icon" aria-hidden="true">📝</span>
+                <span class="tab-label">编码</span>
+            </button>
+            <button class="tab-btn" data-tab="decode" role="tab" aria-selected="false" aria-controls="panel-decode">
+                <span class="tab-icon" aria-hidden="true">🔓</span>
+                <span class="tab-label">解码</span>
+            </button>
+        </nav>
+
+        <!-- ===== 编码面板 ===== -->
+        <section class="panel active" id="panel-encode" role="tabpanel" aria-labelledby="tab-encode">
+            <!-- 消息输入 -->
+            <div class="glass-card form-section">
+                <div class="form-group">
+                    <label for="encode-text">
+                        <span class="label-icon" aria-hidden="true">📄</span> 要隐藏的文本内容
+                    </label>
+                    <textarea id="encode-text" rows="5" placeholder="输入要隐藏的秘密消息..." maxlength="10000" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+                    <div class="char-count">
+                        <span id="char-count">0</span> / <span id="char-max">10000</span> 字符
+                        · 预估容量：<span id="capacity-hint">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 密钥模式 -->
+            <div class="glass-card form-section">
+                <div class="form-group">
+                    <label>
+                        <span class="label-icon" aria-hidden="true">🔑</span> 密钥模式
+                    </label>
+                    <div class="radio-group" role="radiogroup">
+                        <label class="radio-item" for="key-default">
+                            <input type="radio" name="key-mode" id="key-default" value="default" checked>
+                            <span class="radio-text">
+                                <strong>默认密钥</strong>
+                                <small>公开兼容模式（不加密，仅隐写）</small>
+                            </span>
+                        </label>
+                        <label class="radio-item" for="key-random">
+                            <input type="radio" name="key-mode" id="key-random" value="random">
+                            <span class="radio-text">
+                                <strong>随机密钥</strong>
+                                <small>AES-256-GCM 端到端加密</small>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 随机密钥区域 -->
+                <div class="random-key-area" id="random-key-area" hidden>
+                    <div class="key-row">
+                        <input type="text" id="random-key-value" placeholder="点击生成密钥" readonly autocomplete="off">
+                        <button class="btn btn-secondary" id="btn-generate-key" type="button">
+                            <span class="btn-icon" aria-hidden="true">🎲</span> 生成
+                        </button>
+                        <button class="btn btn-secondary" id="btn-copy-key" type="button">
+                            <span class="btn-icon" aria-hidden="true">📋</span> 复制
+                        </button>
+                    </div>
+                    <p class="hint">
+                        <span class="hint-icon" aria-hidden="true">⚠️</span>
+                        请妥善保存此密钥，解密时必须使用相同的密钥。丢失密钥 = 永远无法恢复数据。
+                    </p>
+                </div>
+            </div>
+
+            <!-- 载体图 -->
+            <div class="glass-card form-section">
+                <div class="form-group">
+                    <label>
+                        <span class="label-icon" aria-hidden="true">🖼️</span> 载体图（可选）
+                    </label>
+                    <div class="upload-area" id="carrier-upload" tabindex="0" role="button" aria-label="上传载体图片，点击或拖拽到此处">
+                        <div class="upload-placeholder" id="carrier-placeholder">
+                            <span class="upload-icon" aria-hidden="true">📎</span>
+                            <span class="upload-text">点击或拖拽图片到此</span>
+                            <small class="upload-hint">支持 PNG / JPG / WebP / BMP</small>
+                        </div>
+                        <div class="upload-preview" id="carrier-preview" hidden>
+                            <img id="carrier-thumb" alt="载体图预览">
+                            <button class="btn-remove" id="btn-remove-carrier" aria-label="移除图片" type="button">✕</button>
+                        </div>
+                        <input type="file" id="carrier-file" accept="image/png,image/jpeg,image/webp,image/bmp,image/gif" hidden>
+                    </div>
+                    <p class="hint" style="color: var(--text-secondary); margin-top: 8px;">
+                        不上传则自动生成正方形 PNG；上传后数据藏入该图像素
+                    </p>
+                    <!-- 容量信息 -->
+                    <div class="capacity-info" id="capacity-info" hidden>
+                        <span class="capacity-label">📊 图片容量：</span>
+                        <span class="capacity-value" id="capacity-value">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 编码按钮 -->
+            <button class="btn btn-primary btn-block btn-encode" id="btn-encode" type="button">
+                <span class="btn-icon" aria-hidden="true">🚀</span>
+                <span class="btn-text">生成隐写图片</span>
+            </button>
+
+            <!-- 编码错误 -->
+            <div class="error-area" id="encode-error" hidden role="alert"></div>
+
+            <!-- 编码结果 -->
+            <div class="glass-card result-area" id="encode-result" hidden>
+                <h3>
+                    <span aria-hidden="true">✅</span> 生成成功
+                </h3>
+                <div class="preview-box">
+                    <img id="result-preview" alt="生成的隐写图片">
+                </div>
+                <p class="preview-hint" id="result-hint"></p>
+                <div class="result-info" id="result-info"></div>
+                <!-- 微信保存提示（仅微信中显示） -->
+                <div class="wechat-save-tip" id="wechat-save-tip" hidden>
+                    <span aria-hidden="true">💡</span>
+                    <strong>微信保存方法：</strong>点击「保存图片」→ 右上角「在浏览器打开」→ 长按图片 → 「保存到相册」
+                </div>
+                <div class="action-row">
+                    <a class="btn btn-primary" id="btn-download" rel="noopener">
+                        <span class="btn-icon" aria-hidden="true">💾</span> 保存图片
+                    </a>
+                    <button class="btn btn-secondary" id="btn-share" hidden type="button">
+                        <span class="btn-icon" aria-hidden="true">📤</span> 分享
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== 解码面板 ===== -->
+        <section class="panel" id="panel-decode" role="tabpanel" aria-labelledby="tab-decode" hidden>
+            <!-- 上传隐写图片 -->
+            <div class="glass-card form-section">
+                <div class="form-group">
+                    <label>
+                        <span class="label-icon" aria-hidden="true">🖼️</span> 上传隐写图片
+                    </label>
+                    <div class="upload-area" id="decode-upload" tabindex="0" role="button" aria-label="上传隐写图片，点击或拖拽到此处">
+                        <div class="upload-placeholder" id="decode-placeholder">
+                            <span class="upload-icon" aria-hidden="true">📎</span>
+                            <span class="upload-text">点击或拖拽隐写图片到此</span>
+                            <small class="upload-hint">支持 PNG / JPG / WebP / BMP</small>
+                        </div>
+                        <div class="upload-preview" id="decode-preview" hidden>
+                            <img id="decode-thumb" alt="隐写图片预览">
+                            <button class="btn-remove" id="btn-remove-decode" aria-label="移除图片" type="button">✕</button>
+                        </div>
+                        <input type="file" id="decode-file" accept="image/png,image/jpeg,image/webp,image/bmp,image/gif" hidden>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 密钥输入 -->
+            <div class="glass-card form-section">
+                <div class="form-group">
+                    <label for="decode-key">
+                        <span class="label-icon" aria-hidden="true">🔑</span> 密钥（随机密钥模式时必填）
+                    </label>
+                    <input type="password" id="decode-key" placeholder="如果是随机密钥加密，请输入密钥" autocomplete="off" autocorrect="off" autocapitalize="off">
+                </div>
+            </div>
+
+            <!-- 解码按钮 -->
+            <button class="btn btn-primary btn-block btn-decode" id="btn-decode" type="button">
+                <span class="btn-icon" aria-hidden="true">🔍</span>
+                <span class="btn-text">开始解析</span>
+            </button>
+
+            <!-- 解码错误 -->
+            <div class="error-area" id="decode-error" hidden role="alert"></div>
+
+            <!-- 解码结果 -->
+            <div class="glass-card result-area" id="decode-result" hidden>
+                <h3>
+                    <span aria-hidden="true">✅</span> 解析成功
+                </h3>
+                <div class="text-output-box">
+                    <textarea id="decoded-text" rows="6" readonly placeholder="解密后的文本将显示在这里..."></textarea>
+                </div>
+                <div class="action-row">
+                    <button class="btn btn-primary" id="btn-copy-text" type="button">
+                        <span class="btn-icon" aria-hidden="true">📋</span> 复制文本
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <p>
+                <span class="footer-icon" aria-hidden="true">🔒</span>
+                默认密钥：<code>WelcomeToUse888!</code>
+                <span class="footer-sep">·</span>
+                <span class="footer-icon" aria-hidden="true">🛡️</span>
+                随机密钥使用 AES-256-GCM 加密
+            </p>
+            <p class="footer-meta">
+                ✅ 兼容微信/QQ/UC/华为/小米/三星等浏览器 · 支持 8MB+ 载体图
+            </p>
+            <p class="footer-meta">
+                纯前端实现 · 零服务器 · 数据永不离开你的设备
+            </p>
+        </footer>
+    </main>
+
+    <!-- Toast 容器 -->
+    <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- 加载中遮罩 -->
+    <div class="loading-overlay" id="loading-overlay" hidden role="dialog" aria-label="处理中">
+        <div class="loading-spinner" aria-hidden="true"></div>
+        <p class="loading-text" id="loading-text">处理中...</p>
+    </div>
+
+    <!-- Scripts（defer 保证顺序执行） -->
+    <script src="js/crypto.js" defer></script>
+    <script src="js/stego.js" defer></script>
+    <script src="js/app.js" defer></script>
+</body>
+</html>
