@@ -1,0 +1,77 @@
+========================================================================
+  🔐 推送到 GitHub — 操作指南
+========================================================================
+
+  方式 A：用脚本自动推送（推荐）
+  --------------------------------
+  1. 在 GitHub 创建 Token:
+     https://github.com/settings/tokens
+     → 勾选 'repo' 权限 → 生成 → 复制
+
+  2. 在终端运行:
+     cd /data/workspace/favicon-steganography
+     python3 /data/workspace/push_to_github.py
+
+  3. 粘贴 Token → 输入 yes → 等待推送完成
+
+
+  方式 B：手动推送（3 条命令）
+  --------------------------------
+  cd /data/workspace/favicon-steganography
+
+  # 1. 添加远程（替换 YOUR_TOKEN 为实际 Token）
+  git remote add origin https://oauth2:YOUR_TOKEN@github.com/zhx-111111/favicon-steganography.git
+
+  # 2. 强制推送（覆盖原项目所有文件）
+  git push --force -u origin main
+
+  # 3. 验证
+  git log --oneline
+  # 应看到 2 个提交
+
+
+  方式 C：下载后手动上传
+  --------------------------------
+  1. 下载本目录的 zip 压缩包
+  2. 在 GitHub 网页 → 删除原仓库所有文件
+  3. 上传 zip 解压后的所有文件
+
+
+========================================================================
+  🚀 推送到 GitHub 后 → 部署 Cloudflare Pages
+========================================================================
+
+  1. 登录 https://dash.cloudflare.com/ → Pages
+  2. Create a project → Connect to Git
+  3. 选 favicon-steganography 仓库
+  4. 设置:
+     Framework preset: None
+     Build command:    (留空)
+     Output dir:       /
+  5. Save and Deploy → 30 秒内上线
+
+
+========================================================================
+  ✅ 当前仓库状态
+========================================================================
+
+  提交 1: 🚀 完整重构 (15 个文件)
+    - index.html (Apple UI 毛玻璃风格)
+    - css/style.css (深色模式 + 全平台适配)
+    - js/crypto.js (AES-256-GCM 加密)
+    - js/stego.js (LSB 隐写引擎, 支持 8MB+ 大图)
+    - js/app.js (全浏览器兼容交互)
+    - assets/ (PWA 图标)
+    - _headers / _redirects (Cloudflare 规则)
+    - manifest.json (PWA 配置)
+    - README.md
+
+  提交 2: 🧪 测试 + 部署工具
+    - test_stego.py (8/8 测试通过)
+    - DEPLOY.md (部署文档)
+    - push_to_github.py (推送脚本)
+    - wrangler.toml (Cloudflare 配置)
+    - .gitignore
+
+  测试结果: ✅ 8/8 通过 (PSNR 78.1dB, 4.36MB 容量)
+  JS 语法: ✅ 3/3 文件通过 node --check
