@@ -1,0 +1,15 @@
+# Cloudflare Pages 配置
+# 项目类型: 静态站点
+# 构建设置（在 Cloudflare Dashboard 中配置）:
+#   Build command: (留空)
+#   Build output directory: /
+#   Root directory: (留空)
+
+name = "favicon-steganography"
+type = "javascript"
+
+# 可选：绑定自定义域名
+# [env.production]
+# routes = [
+#   { pattern = "stego.yourdomain.com", custom_domain = true }
+# ]
