@@ -1,0 +1,6 @@
+# Cloudflare Pages 重定向规则
+# 将根路径重定向到主页面（如有需要）
+# /  /index.html  200
+
+# SPA fallback（如果未来改为 SPA 架构）
+# /*  /index.html  200
